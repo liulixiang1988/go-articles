@@ -186,61 +186,43 @@ Go定义了一个特殊的错误常量`sql.ErrNoRows`，当结果为空时，`Qu
 
 ##修改数据和使用事务
 
-Now we're ready to see how to modify data and work with transactions. The
-distinction might seem artificial if you're used to programming languages that
-use a "statement" object for fetching rows as well as updating data, but in Go,
-there's an important reason for the difference.
+现在我们准备好了研究如何修改数据和使用事务了。如果你习惯了以“语句”对象来获取和更新数据的方法来编程，那么在Go中，这种区别有一个重要的原因。
 
-Statements that Modify Data
-===========================
+###修改数据的语句
 
-Use `Exec()`, preferably with a prepared statement, to accomplish an `INSERT`,
-`UPDATE`, `DELETE`, or other statement that doesn't return rows. The following
-example shows how to insert a row and inspect metadata about the operation:
+使用`Exec()`（最好与准备语句结合使用），来完成`INSERT`, `UPDATE`, `DELETE` 或者其它不返回行的语句。下面的例子展示了如何插入一行并且检查操作的元数据
 
-<pre class="prettyprint lang-go">
-stmt, err := db.Prepare("INSERT INTO users(name) VALUES(?)")
-if err != nil {
-	log.Fatal(err)
-}
-res, err := stmt.Exec("Dolly")
-if err != nil {
-	log.Fatal(err)
-}
-lastId, err := res.LastInsertId()
-if err != nil {
-	log.Fatal(err)
-}
-rowCnt, err := res.RowsAffected()
-if err != nil {
-	log.Fatal(err)
-}
-log.Printf("ID = %d, affected = %d\n", lastId, rowCnt)
-</pre>
+	stmt, err := db.Prepare("INSERT INTO users(name) VALUES(?)")
+	if err != nil {
+		log.Fatal(err)
+	}
+	res, err := stmt.Exec("Dolly")
+	if err != nil {
+		log.Fatal(err)
+	}
+	lastId, err := res.LastInsertId()
+	if err != nil {
+		log.Fatal(err)
+	}
+	rowCnt, err := res.RowsAffected()
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.Printf("ID = %d, affected = %d\n", lastId, rowCnt)
 
-Executing the statement produces a `sql.Result` that gives access to statement
-metadata: the last inserted ID and the number of rows affected.
+执行语句会产生一个`sql.Result`，它提供了对语句元数据的访问：最后插入的ID和影响的行数。
 
 What if you don't care about the result? What if you just want to execute a
 statement and check if there were any errors, but ignore the result? Wouldn't
 the following two statements do the same thing?
+如果你不关心返回的结果呢？或者如果你仅仅想执行一个语句，然后检查是否有错误而不管结果呢？那下面的两条语句是否是一样？
 
-<pre class="prettyprint lang-go">
-_, err := db.Exec("DELETE FROM users")  // OK
-_, err := db.Query("DELETE FROM users") // BAD
-</pre>
+	_, err := db.Exec("DELETE FROM users")  // OK
+	_, err := db.Query("DELETE FROM users") // BAD
 
-The answer is no. They do **not** do the same thing, and **you should never use
-`Query()` like this.** The `Query()` will return a `sql.Rows`, which reserves a
-database connection until the `sql.Rows` is closed.
-Since there might be unread data (e.g. more data rows), the connection can not
-be used. In the example above, the connection will *never* be released again.
-The garbage collector will eventually close the underlying `net.Conn` for you,
-but this might take a long time. Moreover the database/sql package keeps
-tracking the connection in its pool, hoping that you release it at some point,
-so that the connection can be used again.
-This anti-pattern is therefore a good way to run out of resources (too many
-connections, for example).
+答案是否定的。它们并**不是**一样的，而且**用于不要这样用`Query()`**。`Query()`返回`sql.Rows`，在`sql.Rows`关闭之前，它将一直占用这个数据库连接。
+
+因为也许存在未读的数据（多行），连接不可用。在上例中，连接**永远**都不会被释放。垃圾回收器最终会为你关闭底层的`net.Conn`，但那会消耗很长一段时间。此外，database/sql包保持着对连接池中连接的跟踪，期冀在某一时间点释放它，那样连接就再次可用了。这种反模式是耗尽资源的一种很好方法（比如，过多的连接）。
 
 Working with Transactions
 =========================
