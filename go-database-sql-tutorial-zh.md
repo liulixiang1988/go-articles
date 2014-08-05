@@ -212,9 +212,6 @@ Go定义了一个特殊的错误常量`sql.ErrNoRows`，当结果为空时，`Qu
 
 执行语句会产生一个`sql.Result`，它提供了对语句元数据的访问：最后插入的ID和影响的行数。
 
-What if you don't care about the result? What if you just want to execute a
-statement and check if there were any errors, but ignore the result? Wouldn't
-the following two statements do the same thing?
 如果你不关心返回的结果呢？或者如果你仅仅想执行一个语句，然后检查是否有错误而不管结果呢？那下面的两条语句是否是一样？
 
 	_, err := db.Exec("DELETE FROM users")  // OK
@@ -224,38 +221,21 @@ the following two statements do the same thing?
 
 因为也许存在未读的数据（多行），连接不可用。在上例中，连接**永远**都不会被释放。垃圾回收器最终会为你关闭底层的`net.Conn`，但那会消耗很长一段时间。此外，database/sql包保持着对连接池中连接的跟踪，期冀在某一时间点释放它，那样连接就再次可用了。这种反模式是耗尽资源的一种很好方法（比如，过多的连接）。
 
-Working with Transactions
-=========================
+###使用事务
 
-In Go, a transaction is essentially an object that reserves a connection to the
-datastore. It lets you do all of the operations we've seen thus far, but
-guarantees that they'll be executed on the same connection.
+在Go中，事务是一个基本的对象，它持有一个对数据库的连接。它允许你做目前为止你所见过的所有操作，并且是在同一个连接中完成所有的操作。
 
-You begin a transaction with a call to `db.Begin()`, and close it with a
-`Commit()` or `Rollback()` method on the resulting `Tx` variable. Under the
-covers, the `Tx` gets a connection from the pool, and reserves it for use only
-with that transaction. The methods on the `Tx` map one-for-one to methods you
-can call on the database itself, such as `Query()` and so forth.
+通过调用`db.Begin()`来开始一个事务，关闭事务是通过在结果变量`Tx`上调用`Commit()`或者`Rollback()`方法。在内部，`Tx`从连接池中获得一个连接，并在事务中保持它以供使用。`Tx`上的方法与你调用数据库时使用的方法一一对应，比如`Query()`等等。
 
-Prepared statements that are created in a transaction are bound exclusively to
-that transaction, and can't be used outside of it. Likewise, prepared statements
-created only on a database handle can't be used within a transaction.
+在事务中创建的准备语句被显示的绑定到对应的事务中，而且不能在外部被使用。同样的，在数据库上创建的准备语句不能应用于事务。
 
-You should not mingle the use of transaction-related functions such as `Begin()`
-and `Commit()` with SQL statements such as `BEGIN` and `COMMIT` in your SQL
-code. Bad things might result:
+请不要将事务相关的函数（比如`Begin()`和`Commit()`等）与SQL语句中的`BEGIN`和`COMMIT`混合使用。这会引发下面不好的影响：
 
-* The `Tx` objects could remain open, reserving a connection from the pool and not returning it.
-* The state of the database could get out of sync with the state of the Go variables representing it.
-* You could believe you're executing queries on a single connection, inside of a transaction, when in reality Go has created several connections for you invisibly and some statements aren't part of the transaction.
+* `Tx`对象一直保持着打开状态，从池中持有该连接，并且不返回它。
+* 数据库的状态不再与Go对应的变量的状态保持同步。
+* 你会认为你是在事务内部的那个连接上执行查询，实际上Go可能已经隐式的创建多个连接，并且语句有可能都不是事务的一部分
 
-**Previous: [Retrieving Result Sets](retrieving.html)**
-**Next: [Working with NULLs](nulls.html)**
-
----
-layout: article
-title: Working with NULLs
----
+##使用Null
 
 Nullable columns are annoying and lead to a lot of ugly code. If you can, avoid
 them. If not, then you'll need to use special types from the `database/sql`
