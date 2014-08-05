@@ -156,39 +156,34 @@ Here's what's happening in the above code:
 
 ###单行查询
 
-If a query returns at most one row, you can use a shortcut around some of the
-lengthy boilerplate code:
+如果一个查询几乎每次都是只返回一行，那么你可以使用一个快捷方法来避免冗长的样板代码：
 
-<pre class="prettyprint lang-go">
-var name string
-err = db.QueryRow("select name from users where id = ?", 1).Scan(&amp;name)
-if err != nil {
-	log.Fatal(err)
-}
-fmt.Println(name)
-</pre>
+	var name string
+	err = db.QueryRow("select name from users where id = ?", 1).Scan(&amp;name)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(name)
 
-Errors from the query are deferred until `Scan()` is called, and then are
-returned from that. You can also call `QueryRow()` on a prepared statement:
+来自查询的错误被延迟到`Scan()`被调用时，在那之后才会返回。你也可以在准备语句中调用`QueryRow()`：
 
-<pre class="prettyprint lang-go">
-stmt, err := db.Prepare("select id, name from users where id = ?")
-if err != nil {
-	log.Fatal(err)
-}
-var name string
-err = stmt.QueryRow(1).Scan(&amp;name)
-if err != nil {
-	log.Fatal(err)
-}
-fmt.Println(name)
-</pre>
+	stmt, err := db.Prepare("select id, name from users where id = ?")
+	if err != nil {
+		log.Fatal(err)
+	}
+	var name string
+	err = stmt.QueryRow(1).Scan(&amp;name)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(name)
 
 Go defines a special error constant, called `sql.ErrNoRows`, which is returned
 from `QueryRow()` when the result is empty. This needs to be handled as a
 special case in most circumstances. An empty result is often not considered an
 error by application code, and if you don't check whether an error is this
 special constant, you'll cause application-code errors you didn't expect.
+Go定义了一个特殊的错误常量`sql.ErrNoRows`，当结果为空时，`QueryRow()`返回它。
 
 One might ask why an empty result set is considered an error. There's nothing
 erroneous about an empty set. The reason is that the `QueryRow()` method needs
