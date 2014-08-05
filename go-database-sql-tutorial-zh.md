@@ -71,7 +71,6 @@ Go中使用SQL或者类似SQL、数据库的常用方法是[database/sql package
 
 如果你不把`sql.DB`作为一个长存的对象，那么你会遇到各种各样的错误，比如无法复用和共享连接，耗尽网络资源，由于TCP连接保持在`TIME_WAIT`状态而间断性的失败。诸如此类的问题表示着你并没有按照`database\sql`设计的意图来使用它。
 
-Now it's time to use your `sql.DB` object.
 现在是时候使用`sql.DB`对象了。
 
 ##获取结果集
@@ -237,47 +236,32 @@ Go定义了一个特殊的错误常量`sql.ErrNoRows`，当结果为空时，`Qu
 
 ##使用Null
 
-Nullable columns are annoying and lead to a lot of ugly code. If you can, avoid
-them. If not, then you'll need to use special types from the `database/sql`
-package to handle them, or define your own.
+可空列非常的恼人，而且容易导致代码变得丑陋。如果可以，尽量避免它们。如果不行，那就需要使用`database\sql`保重特殊的类型来处理它们，或者自己定义类型来处理。
 
-There are types for nullable booleans, strings, integers, and floats. Here's how
-you use them:
+bool, string, int, float等类型都有对应的空类型。下面是怎么使用它们：
 
-<pre class="prettyprint lang-go">
-for rows.Next() {
-	var s sql.NullString
-	err := rows.Scan(&amp;s)
-	// check err
-	if s.Valid {
-	   // use s.String
-	} else {
-	   // NULL value
+	for rows.Next() {
+		var s sql.NullString
+		err := rows.Scan(&amp;s)
+		// check err
+		if s.Valid {
+		   // use s.String
+		} else {
+		   // NULL value
+		}
 	}
-}
-</pre>
 
-Limitations of the nullable types, and reasons to avoid nullable columns in case
-you need more convincing:
+可空类型的局限性，以及避免可空列的更令人信
 
-1. There's no `sql.NullUint64` or `sql.NullYourFavoriteType`. You'd need to
-	define your own for this.
-1. Nullability can be tricky, and not future-proof. If you think something won't
-	be null, but you're wrong, your program will crash, perhaps rarely enough
-	that you won't catch errors before you ship them.
-1. One of the nice things about Go is having a useful default zero-value for
-	every variable. This isn't the way nullable things work.
+1. 没有`sql.NullUnit64`和`sql.NullYouFavoriteType`。你需要自己定义这些。
+2. 空特性很复杂，而且不是面向未来的。如果你以为某样东西是null，但是你错了，那么你的程序将会崩溃，甚至稀少到在遇到它们之前根本不会捕捉这个错误。
+3. Go有一个很好的特点就是对每个变量都有一个有用的默认零值。这并不是可空对象的工作方式。
 
 If you need to define your own types to handle NULLs, you can copy the design of
 `sql.NullString` to achieve that.
+如果需要定义自己的类型来处理NULL，可以复制`sql.NullString`的设计来实现它。
 
-**Previous: [Modifying Data and Using Transactions](modifying.html)**
-**Next: [Working with Unknown Columns](varcols.html)**
-
----
-layout: article
-title: Working with Unknown Columns
----
+##使用无名列
 
 The `Scan()` function requires you to pass exactly the right number of
 destination variables. What if you don't know what the query will return?
