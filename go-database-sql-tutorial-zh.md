@@ -178,30 +178,13 @@ Here's what's happening in the above code:
 	}
 	fmt.Println(name)
 
-Go defines a special error constant, called `sql.ErrNoRows`, which is returned
-from `QueryRow()` when the result is empty. This needs to be handled as a
-special case in most circumstances. An empty result is often not considered an
-error by application code, and if you don't check whether an error is this
-special constant, you'll cause application-code errors you didn't expect.
-Go定义了一个特殊的错误常量`sql.ErrNoRows`，当结果为空时，`QueryRow()`返回它。
+Go定义了一个特殊的错误常量`sql.ErrNoRows`，当结果为空时，`QueryRow()`返回它。在大多数情况下都需要将其作为一个特例进行处理。应用一般不会将空结果作为错误来看待，所以如果你不检查错误是否是这个特例，可能就会造成意想不到的应用代码错误。
 
-One might ask why an empty result set is considered an error. There's nothing
-erroneous about an empty set. The reason is that the `QueryRow()` method needs
-to use this special-case in order to let the caller distinguish whether
-`QueryRow()` in fact found a row; without it, `Scan()` wouldn't do anything and
-you might not realize that your variable didn't get any value from the database
-after all.
+有人会问什么将空结果作为一种错误来看待。一个空集合并没有错。之所以这样做的原因是因为`QueryRow()`方法需要用这个特例来告知调用者`QueryRow()`是否实际返回了一行；没有它，`Scan()`将不能够做任何事，你也可能不会意识到你的变量没有从数据库中获得任何值。
 
-You should not run into this error when you're not using `QueryRow()`. If you
-encounter this error elsewhere, you're doing something wrong.
+你应该不会在其它地方没有使用`QueryRow()`的地方遇到这个错误。如果你在其它地方遇到了这个错误，那说明你一定哪里做错了。
 
-**Previous: [Accessing the Database](accessing.html)**
-**Next: [Modifying Data and Using Transactions](modifying.html)**
-
----
-layout: article
-title: Modifying Data and Using Transactions
----
+##修改数据和使用事务
 
 Now we're ready to see how to modify data and work with transactions. The
 distinction might seem artificial if you're used to programming languages that
