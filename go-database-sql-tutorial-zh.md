@@ -263,61 +263,46 @@ bool, string, int, float等类型都有对应的空类型。下面是怎么使�
 
 `Scan()`函数要求传递给它的目标变量的数目正好匹配。但是如果你不知道查询返回的是什么该怎么办？
 
-If you don't know how many columns the query will return, you can use
-`Columns()` to find a list of column names. You can examine the length of this
-list to see how many columns there are, and you can pass a slice into `Scan()`
-with the correct number of values. For example, some forks of MySQL return
-different columns for the `SHOW PROCESSLIST` command, so you have to be prepared
-for that or you'll cause an error. Here's one way to do it; there are others:
+如果你不知道查询返回了多少列，你可以使用`Columns()`来查找列名的列表。你可以检查列表的长度来获得以供有多少个列，也可以传递一个拥有相同值数量的slice到`Scan()`。比如，MySQL的一些分支对于`SHOW PROCESSLIST`命令会返回不同的列，所以你不得不为此做准备，否则会引发错误。下面是这么做的一种方法，当然还有其它的方法：
 
-<pre class="prettyprint lang-go">
-cols, err := rows.Columns()
-if err != nil {
-	// handle the error
-} else {
-	dest := []interface{}{ // Standard MySQL columns
-		new(uint64), // id
-		new(string), // host
-		new(string), // user
-		new(string), // db
-		new(string), // command
-		new(uint32), // time
-		new(string), // state
-		new(string), // info
+	cols, err := rows.Columns()
+	if err != nil {
+		// handle the error
+	} else {
+		dest := []interface{}{ // Standard MySQL columns
+			new(uint64), // id
+			new(string), // host
+			new(string), // user
+			new(string), // db
+			new(string), // command
+			new(uint32), // time
+			new(string), // state
+			new(string), // info
+		}
+		if len(cols) == 11 {
+			// Percona Server
+		} else if len(cols) > 8 {
+			// Handle this case
+		}
+		err = rows.Scan(dest...)
+		// Work with the values in dest
 	}
-	if len(cols) == 11 {
-		// Percona Server
-	} else if len(cols) &gt; 8 {
-		// Handle this case
+
+如果你既不知道列也不知道列的类型，则应该使用`sql.RawBytes`。
+
+	cols, err := rows.Columns() // Remember to check err afterwards
+	vals := make([]interface{}, len(cols))
+	for i, _ := range cols {
+		vals[i] = new(sql.RawBytes)
 	}
-	err = rows.Scan(dest...)
-	// Work with the values in dest
-}
-</pre>
+	for rows.Next() {
+		err = rows.Scan(vals...)
+		// Now you can check each element of vals for nil-ness,
+		// and you can use type introspection and type assertions
+		// to fetch the column into a typed variable.
+	}
 
-If you don't know the columns or their types, you should use `sql.RawBytes`.
-
-<pre class="prettyprint lang-go">
-cols, err := rows.Columns() // Remember to check err afterwards
-vals := make([]interface{}, len(cols))
-for i, _ := range cols {
-	vals[i] = new(sql.RawBytes)
-}
-for rows.Next() {
-	err = rows.Scan(vals...)
-	// Now you can check each element of vals for nil-ness,
-	// and you can use type introspection and type assertions
-	// to fetch the column into a typed variable.
-}
-</pre>
-
-**Previous: [Working with NULLs](nulls.html)**
-**Next: [The Connection Pool](connection-pool.html)**
-
----
-layout: article
-title: The Connection Pool
----
+##连接池
 
 There is a basic connection pool in the `database/sql` package. There isn't a
 lot of ability to control or inspect it, but here are some things you might find
