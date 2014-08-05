@@ -257,14 +257,11 @@ bool, string, int, float等类型都有对应的空类型。下面是怎么使�
 2. 空特性很复杂，而且不是面向未来的。如果你以为某样东西是null，但是你错了，那么你的程序将会崩溃，甚至稀少到在遇到它们之前根本不会捕捉这个错误。
 3. Go有一个很好的特点就是对每个变量都有一个有用的默认零值。这并不是可空对象的工作方式。
 
-If you need to define your own types to handle NULLs, you can copy the design of
-`sql.NullString` to achieve that.
 如果需要定义自己的类型来处理NULL，可以复制`sql.NullString`的设计来实现它。
 
 ##使用无名列
 
-The `Scan()` function requires you to pass exactly the right number of
-destination variables. What if you don't know what the query will return?
+`Scan()`函数要求传递给它的目标变量的数目正好匹配。但是如果你不知道查询返回的是什么该怎么办？
 
 If you don't know how many columns the query will return, you can use
 `Columns()` to find a list of column names. You can examine the length of this
