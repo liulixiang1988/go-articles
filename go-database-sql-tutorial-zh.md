@@ -83,79 +83,55 @@ Now it's time to use your `sql.DB` object.
 3. 执行一个一次性使用的语句
 4. 执行一个返回仅返回一行的查询。这是某些情况的快捷方式
 
-Go's `database/sql` function names are significant. **If a function name
-includes `Query`, it is designed to ask a question of the database, and will
-return a set of rows**, even if it's empty. Statements that don't return rows
-should not use `Query` functions; they should use `Exec()`.
+Go的`database/sql`函数名字非常重要。**如果函数名字包含`Query`，则它被设计用来向数据库提出一个问题，并且返回一个行的集合**，即使它是空的。哪些不需要返回行的语句不应该使用`Query`函数，而应该使用`Exec()`。
 
-Fetching Data from the Database
-===============================
+###从数据库获取数据
 
-Let's take a look at an example of how to query the database, working with
-results. We'll query the `users` table for a user whose `id` is 1, and print out
-the user's `id` and `name`.  We will assign results to variables, a row at a
-time, with `rows.Scan()`.
+让我们看一个如何查询数据库并且处理结果的例子。我们将查询用户表中`id`为1的用户，并且打印出用户的`id`和`name`。并且将结果赋值给变量，使用`rows.Scan()`，一次一行。
 
-<pre class="prettyprint lang-go">
-var (
-	id int
-	name string
-)
-rows, err := db.Query("select id, name from users where id = ?", 1)
-if err != nil {
-	log.Fatal(err)
-}
-defer rows.Close()
-for rows.Next() {
-	err := rows.Scan(&amp;id, &amp;name)
+	var (
+		id int
+		name string
+	)
+	rows, err := db.Query("select id, name from users where id = ?", 1)
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Println(id, name)
-}
-err = rows.Err()
-if err != nil {
-	log.Fatal(err)
-}
-</pre>
+	defer rows.Close()
+	for rows.Next() {
+		err := rows.Scan(&id, &name)
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Println(id, name)
+	}
+	err = rows.Err()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 Here's what's happening in the above code:
+下面是关于代码的一些说明
 
-1. We're using `db.Query()` to send the query to the database. We check the error, as usual.
-2. We defer `rows.Close()`. This is very important.
-3. We iterate over the rows with `rows.Next()`.
-4. We read the columns in each row into variables with `rows.Scan()`.
-5. We check for errors after we're done iterating over the rows.
+1. 我们使用`db.Query()`来发送查询到数据库。像往常一样，检查错误。
+2. 使用defer `rows.Close()`.这一步很重要。
+3. 我们使用`rows.Next()`来遍历行。
+4. 我们使用`rows.Scan()`来读取每行中的列到变量中。
+5. 在遍历过所有行之后要检查错误。
 
-A couple parts of this are easy to get wrong, and can have bad consequences.
+这里有部分很容易出错，并且会导致不好的结果。
 
-First, as long as there's an open result set (represented by `rows`), the
-underlying connection is busy and can't be used for any other query. That means
-it's not available in the connection pool. If you iterate over all of the rows
-with `rows.Next()`, eventually you'll read the last row, and `rows.Next()` will
-encounter an internal EOF error and call `rows.Close()` for you. But if for any
-reason you exit that loop -- an error, an early return, or so on -- then the
-`rows` doesn't get closed, and the connection remains open. This is an easy way
-to run out of resources. This is why **you should always `defer rows.Close()`**,
-even if you also call it explicitly at the end of the loop, which isn't a bad
-idea. `rows.Close()` is a harmless no-op if it's already closed, so you can call
-it multiple times. Notice, however, that we check the error first, and only do
-`rows.Close()` if there isn't an error, in order to avoid a runtime panic.
+首先，只要有一个打卡的结果集(`rows`)，底层的connection就为忙，并且不能被其他查询所用。这意味着在连接池中不能使用它。如果你用`rows.Next()`遍历所有的行，最后你会遍历到最后一行，然后就会在内部遇到的EOF错误，然后为你调用`rows.Close()`。但是如果出于任何原因你退出了循环-错误，过早的返回等等，那么`rows`就不会被关闭，并且connection保持着为打开状态。这很容易耗尽资源。这就是为什么**你应该总是`defer rows.Close()`**，及时你也在循环的后面显示调用它，这么做也不是一个坏主意。`rows.Close()`调用不会有坏的影响，即使它已经被关闭过了，所以你可以多次调用它。注意，为了避免`runtime panic`，我们要先检查错误，然后在没有错误时再做`rows.Close()`。
 
-Second, you should always check for an error at the end of the `for rows.Next()`
-loop. If there's an error during the loop, you need to know about it. Don't just
-assume that the loop iterates until you've processed all the rows.
+其次，你应该在`for rows.Next()`循环结束后检查错误。如果循环中有错误，你需要知道到底出了什么错。不要假设循环会一直遍历完所有的行。
 
-The error returned by `rows.Close()` is the only exception to the general rule
-that it's best to capture and check for errors in all database operations. If
-`rows.Close()` throws an error, it's unclear what is the right thing to do.
-Logging the error message or panicing might be the only sensible thing to do,
-and if that's not sensible, then perhaps you should just ignore the error.
+在数据库的所有操作中，一般都是捕获并检查错误。但`rows.Close()`返回的错误是唯一的一个例外。如果`rows.Close()`跑出错误，并不能明确说明正确的做法。记录错误消息或者引发panic或许是唯一有意义的方法，如果这也没有意义，你可以选择忽略这个错误。
 
 This is pretty much the only way to do it in Go. You can't
 get a row as a map, for example. That's because everything is strongly typed.
 You need to create variables of the correct type and pass pointers to them, as
 shown.
+
 
 Preparing Queries
 =================
