@@ -127,24 +127,15 @@ Here's what's happening in the above code:
 
 在数据库的所有操作中，一般都是捕获并检查错误。但`rows.Close()`返回的错误是唯一的一个例外。如果`rows.Close()`跑出错误，并不能明确说明正确的做法。记录错误消息或者引发panic或许是唯一有意义的方法，如果这也没有意义，你可以选择忽略这个错误。
 
-这几乎是用Go获取数据的的唯一方法。例如，你并不能把行作为map获取。因为所有的东西都是强类型的。你需要创建正确类型的变量，并且把指针传给它们，如上例所示。
+这几乎是用Go获取数据的的唯一方法。例如，你并不能把行作为`map`获取。因为所有的东西都是强类型的。你需要创建正确类型的变量，并且把指针传给它们，如上例所示。
 
 
-Preparing Queries
-=================
+###准备查询
 
-You should, in general, always prepare queries to be used multiple times. The
-result of preparing the query is a prepared statement, which can have
-placeholders (a.k.a. bind values) for parameters that you'll provide when you
-execute the statement.  This is much better than concatenating strings, for all
-the usual reasons (avoiding SQL injection attacks, for example).
+一般情况下，你应该总是准备好要使用多次的查询。准备查询的结果就是一个准备好的语句。语句中可以包含执行语句时提供的参数占位符（即绑定值）。这比串联字符串的拼接好很多，因为可以避免一些常见问题（比如SQL注入）。
 
-In MySQL, the parameter placeholder is `?`, and in PostgreSQL it is `$N`, where
-N is a number. SQLite accepts either of these.  In Oracle placeholders begin with
-a colon and are named, like `:param1`. We'll use `?` because we're using MySQL
-as our example.
+在MySQL中，参数占位符是`?`，在PostgreSQL中是`$N`，其中N是一个数字。SQLite可以使用两者的任何一个。在Oracle中占位符以冒号开头，紧接着是名称，比如`:param1`。此处我们使用`?`因为我们在例子中使用的是MySQL。
 
-<pre class="prettyprint lang-go">
 	stmt, err := db.Prepare("select id, name from users where id = ?")
 	if err != nil {
 		log.Fatal(err)
@@ -158,19 +149,12 @@ as our example.
 	for rows.Next() {
 		// ...
 	}
-</pre>
 
-Under the hood, `db.Query()` actually prepares, executes, and closes a prepared
-statement. That's three round-trips to the database. If you're not careful, you
-can triple the number of database interactions your application makes! Some
-drivers can avoid this in specific cases with an addition to `database/sql` in
-Go 1.1, but not all drivers are smart enough to do that. Caveat Emptor.
+在底层，`db.Query()`实际做了准备、执行并且关闭一个准备好的语句的工作。这对数据库来说其实是3个来回。如果你不仔细，你可能会让应用与数据库交互的次数增至3倍！在Go1.1中，一些驱动在某些具体情况下通过对`database/sql`做一些附加来避免这种情况，但是并不是所有的驱动都这么做了。请注意！
 
-Naturally prepared statements and the managment of prepared statements cost
-resources. You should take care to close statements when they are not used again.
+当然，准备的语句和对准备语句的管理都会消耗资源。不再使用它们时，请关闭这些语句。
 
-Single-Row Queries
-==================
+###单行查询
 
 If a query returns at most one row, you can use a shortcut around some of the
 lengthy boilerplate code:
