@@ -127,10 +127,7 @@ Here's what's happening in the above code:
 
 在数据库的所有操作中，一般都是捕获并检查错误。但`rows.Close()`返回的错误是唯一的一个例外。如果`rows.Close()`跑出错误，并不能明确说明正确的做法。记录错误消息或者引发panic或许是唯一有意义的方法，如果这也没有意义，你可以选择忽略这个错误。
 
-This is pretty much the only way to do it in Go. You can't
-get a row as a map, for example. That's because everything is strongly typed.
-You need to create variables of the correct type and pass pointers to them, as
-shown.
+这几乎是用Go获取数据的的唯一方法。例如，你并不能把行作为map获取。因为所有的东西都是强类型的。你需要创建正确类型的变量，并且把指针传给它们，如上例所示。
 
 
 Preparing Queries
@@ -148,19 +145,19 @@ a colon and are named, like `:param1`. We'll use `?` because we're using MySQL
 as our example.
 
 <pre class="prettyprint lang-go">
-stmt, err := db.Prepare("select id, name from users where id = ?")
-if err != nil {
-	log.Fatal(err)
-}
-defer stmt.Close()
-rows, err := stmt.Query(1)
-if err != nil {
-	log.Fatal(err)
-}
-defer rows.Close()
-for rows.Next() {
-	// ...
-}
+	stmt, err := db.Prepare("select id, name from users where id = ?")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer stmt.Close()
+	rows, err := stmt.Query(1)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		// ...
+	}
 </pre>
 
 Under the hood, `db.Query()` actually prepares, executes, and closes a prepared
