@@ -304,24 +304,17 @@ bool, string, int, float等类型都有对应的空类型。下面是怎么使�
 
 ##连接池
 
-There is a basic connection pool in the `database/sql` package. There isn't a
-lot of ability to control or inspect it, but here are some things you might find
-useful to know:
+`database/sql`包里有一个基本的连接池。并没有很好的方法去控制或者监测它，但是知道下面一些知识会对你有些帮助。
 
-* Connections are created when needed and there isn't a free connection in the pool.
-* By default, there's no limit on the number of connections. If you try to do a lot of things at once, you can create an arbitrary number of connections. This can cause the database to return an error such as "too many connections."
-* In Go 1.1 or newer, you can use `db.SetMaxIdleConns(N)` to limit the number of *idle* connections in the pool. This doesn't limit the pool size, though.
-* In Go 1.2.1 or newer, you can use `db.SetMaxOpenConns(N)` to limit the number of *total* open connections to the database. Unfortunately, a [deadlock bug](https://groups.google.com/d/msg/golang-dev/jOTqHxI09ns/x79ajll-ab4J) ([fix](https://code.google.com/p/go/source/detail?r=8a7ac002f840)) prevents `db.SetMaxOpenConns(N)` from safely being used in 1.2.
-* Connections are recycled rather fast. Setting a high number of idle connections with `db.SetMaxIdleConns(N)` can reduce this churn, and help keep connections around for reuse.
-* Keeping a connection idle for a long time can cause problems (like in [this issue](https://github.com/go-sql-driver/mysql/issues/257) with MySQL on Microsoft Azure). Try `db.SetMaxIdleConns(0)` if you get connection timeouts because a connection is idle for too long.
+* 在需要时，而且连接池中没有可用的连接时，连接才被创建。
+* 默认情况下，对连接数没有限制。如果你试图同时创建多个连接，你可以创建任意数量的连接。但是这可能会导致数据库返回“连接过多”的错误。
+* Go1.1或者更新的版本中，你可以通过设置`db.SetMaxIdleConns(N)`来限制连接池中*空闲*连接的数量。但是这并不会限制连接池的大小。
+* 在Go1.2.1或更新的版本中，你可以用`db.SetMaxOpenConns(N)`来设置*所有*打开的连接池的数量。不行的是，有一个[死锁bug][deadlock bug](https://groups.google.com/d/msg/golang-dev/jOTqHxI09ns/x79ajll-ab4J),([修正](https://code.google.com/p/go/source/detail?r=8a7ac002f840))使`db.SetMaxOpenConns(N)`在1.2中使用会出问题。
+* 连接的回收速度是非常快的。通过`db.SetMaxIdleConns(N)`来设置一个较大的空闲连接数量可以缓解这个现象，并且可以保持连接能够复用
+* 保持连接空闲时间过久可能会引发问题（比如在Microsoft Azure上的MySQL的[这个问题](https://github.com/go-sql-driver/mysql/issues/257) 。如果你遇到由于连接空闲太久而引发连接超时，试试`db.SetMaxIdleConns(0)`。
 
-**Previous: [Working with Unknown Columns](varcols.html)**
-**Next: [Surprises, Antipatterns and Limitations](surprises.html)**
+##意料之外的事情, 反模式和限制
 
----
-layout: article
-title: Surprises, Antipatterns and Limitations
----
 
 Although `database/sql` is simple once you're accustomed to it, you might be
 surprised by the subtlety of use cases it supports. This is common to Go's core
