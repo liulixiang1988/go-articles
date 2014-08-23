@@ -315,28 +315,22 @@ bool, string, int, float等类型都有对应的空类型。下面是怎么使�
 
 ##意料之外的事情, 反模式和限制
 
+虽然在你适应过`database/sql`之后会觉得它也比较简单，但是你可能会对它所支持的一些用例的微妙之处感到惊奇。这中现象对Go的核心库来说太常见了。
 
-Although `database/sql` is simple once you're accustomed to it, you might be
-surprised by the subtlety of use cases it supports. This is common to Go's core
-libraries.
+###资源耗尽
 
-Resource Exhaustion
-===================
+正如之前提到的，如果你不谨慎的使用`database/sql`，可能会给自己挖许多坑，常见的就是消耗过多资源或者让资源无法有效回收：
 
-As mentioned throughout this site, if you don't use `database/sql` as intended,
-you can certainly cause trouble for yourself, usually by consuming some
-resources or preventing them from being reused effectively:
+* 打开和关闭数据库可能会导致资源枯竭；
+* 读取所有行失败或者调用`rows.Close()`失败会一直占用池里的连接；
+* 使用`Query()`来执行一些不返回行的语句会导致一直占用池里的连接；
+* 使用准备语句失败会导致许多额外的数据库活动
 
-* Opening and closing databases can cause exhaustion of resources.
-* Failing to read all rows or use `rows.Close()` reserves connections from the pool.
-* Using `Query()` for a statement that doesn't return rows will reserve a connection from the pool.
-* Failing to use prepared statements can lead to a lot of extra database activity.
-
-Large uint64 Values
-===================
+###大uint64值
 
 Here's a surprising error. You can't pass big unsigned integers as parameters to
 statements if their high bit is set:
+
 
 <pre class="prettyprint lang-go">
 _, err := db.Exec("INSERT INTO users(id) VALUES", math.MaxUint64)
